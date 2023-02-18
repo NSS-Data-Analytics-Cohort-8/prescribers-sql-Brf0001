@@ -1,26 +1,28 @@
 -- 1. 
 --     a. Which prescriber had the highest total number of claims (totaled over all drugs)? Report the npi and the total number of claims.
     
-	SELECT md.npi, md.nppes_provider_last_org_name, sc.drug_name, sc.total_claim_count
+	SELECT md.npi, md.nppes_provider_last_org_name, SUM(sc.total_claim_count) AS number_pre
 	FROM prescriber AS md
 		INNER join prescription AS sc USING (npi)
-	ORDER BY sc.total_claim_count DESC;
+	GROUP BY md.npi, md.nppes_provider_last_org_name
+	ORDER BY number_pre DESC
 	
--- 	ANSWER: 1912011792	"COFFEY"	"OXYCODONE HCL"	4538
+-- 	ANSWER: 1881634483	"PENDLEY"	99707
 	
 --     b. Repeat the above, but this time report the nppes_provider_first_name, nppes_provider_last_org_name,  specialty_description, and the total number of claims.
 
-	SELECT md.npi, md.nppes_provider_last_org_name, md.nppes_provider_first_name, md.specialty_description, sc.total_claim_count
+	SELECT md.npi, md.nppes_provider_first_name, md.specialty_description, md.nppes_provider_last_org_name, SUM(sc.total_claim_count) AS number_pre
 	FROM prescriber AS md
-		INNER JOIN prescription AS sc USING (npi)
-	ORDER BY sc.total_claim_count DESC;
+		INNER join prescription AS sc USING (npi)
+	GROUP BY md.npi, md.nppes_provider_last_org_name, md.nppes_provider_first_name, md.specialty_description
+	ORDER BY number_pre DESC
 	
--- 	ANSWER: 1912011792	"COFFEY"	"DAVID"	"Family Practice"	4538	
+-- 	ANSWER: 1881634483	"BRUCE"	"Family Practice"	"PENDLEY"	99707
 
 -- 2. 
 --     a. Which specialty had the most total number of claims (totaled over all drugs)?
 
-	SELECT DISTINCT md.specialty_description, SUM(sc.total_claim_count) AS number_of_claims
+	SELECT md.specialty_description, SUM(sc.total_claim_count) AS number_of_claims
 	FROM prescriber AS md
 		INNER JOIN prescription AS sc USING (npi)
 	GROUP BY md.specialty_description
@@ -58,7 +60,10 @@
 		WHERE d.opioid_drug_flag = 'Y'
 		GROUP BY md.specialty_description
 		)
-	SELECT md.specialty_description, SUM(sc.total_claim_count) AS claims, opioids.opioid, ROUND(((opioids.opioid/SUM(sc.total_claim_count))*100),2) AS percent_opioid
+	SELECT md.specialty_description, 
+		SUM(sc.total_claim_count) AS claims, 
+		opioids.opioid, 
+		ROUND(((opioids.opioid/SUM(sc.total_claim_count))*100),2) AS percent_opioid
 	FROM prescriber AS md
 		LEFT JOIN prescription AS sc USING (npi)
 		LEFT JOIN drug AS d USING (drug_name)
